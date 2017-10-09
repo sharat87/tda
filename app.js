@@ -1,0 +1,269 @@
+var Status = {
+    DEADLOCK: {name: 'DEADLOCK', raw: '', icon: 'fa-question-circle'},
+    RUNNABLE: {name: 'RUNNABLE', raw: 'runnable', icon: 'fa-play-circle-o'},
+    WAIT_CONDITION: {name: 'WAIT_CONDITION', raw: 'waiting on condition', icon: 'fa-moon-o'},
+    WAIT_MONITOR: {name: 'WAIT_MONITOR', raw: '', icon: 'fa-clock-o'},
+    SUSPENDED: {name: 'SUSPENDED', raw: '', icon: 'fa-question-circle'},
+    OBJECT_WAIT: {name: 'OBJECT_WAIT', raw: 'in Object.wait()', icon: 'fa-clock-o'},
+    BLOCKED: {name: 'BLOCKED', raw: '', icon: 'fa-question-circle'},
+    PARKED: {name: 'PARKED', raw: '', icon: 'fa-question-circle'},
+    UNKNOWN: {name: 'UNKNOWN', raw: '', icon: 'fa-times'},
+    SLEEPING: {name: 'SLEEPING', raw: 'sleeping', icon: 'fa-times'},
+
+    get: function (text) {
+        switch (text) {
+            case Status.RUNNABLE.raw:
+                return Status.RUNNABLE;
+            case Status.WAIT_CONDITION.raw:
+                return Status.WAIT_CONDITION;
+            case Status.OBJECT_WAIT.raw:
+                return Status.OBJECT_WAIT;
+            case Status.SLEEPING.raw:
+                return Status.SLEEPING;
+        }
+        console.warn('Unknown status text: ' + text);
+        return Status.UNKNOWN;
+    }
+};
+
+Vue.component('dump-list-pane', {
+    template: document.getElementById('dump-list-tpl').textContent,
+    props: ['dumps', 'threadMap'],
+
+    data: function () {
+        return {
+            activeDump: null
+        };
+    },
+
+    computed: {
+
+        hangSuspects: function () {
+            var hangSuspects = [];
+
+            for (var threadName in this.threadMap) {
+                if (!this.threadMap.hasOwnProperty(threadName)) continue;
+                var threads = this.threadMap[threadName];
+                var isSuspect = true, isMissing = true;
+
+                if (!threads[threads.length - 1])
+                    continue;
+
+                for (var i = threads.length; i-- > 0;) {
+                    var thread = threads[i];
+                    if (thread !== '=DO=' && thread.status.name.indexOf('WAIT') >= 0)
+                        hangSuspects.push(thread);
+                }
+            }
+
+            hangSuspects.sort(function (t1, t2) {
+                return t1.name < t2.name ? -1 : 1;
+            });
+            return hangSuspects;
+        }
+
+    }
+
+});
+
+Vue.component('compare-thread-pane', {
+    template: document.getElementById('compare-thread-tpl').textContent,
+    props: ['dumps', 'threadMap'],
+
+    data: function () {
+        return {
+            activeThread: null,
+            threadsFilter: '',
+            stackFilter: '',
+            showEmptyThreads: true,
+            threadEmptiness: {}
+        }
+    },
+
+    computed: {
+
+        threadMapFiltered: function () {
+            console.log('Filtering thread map.');
+
+            if (this.showEmptyThreads && !this.threadsFilter && !this.stackFilter)
+                return this.threadMap;
+
+            var filtered = {};
+
+            for (var threadName in this.threadMap) {
+                if (!this.threadMap.hasOwnProperty(threadName)) continue;
+                var threads = this.threadMap[threadName];
+
+                if (this.threadsFilter && threadName.indexOf(this.threadsFilter) < 0)
+                    continue;
+
+                if (!this.showEmptyThreads) {
+                    if (!this.threadEmptiness.hasOwnProperty(threadName)) {
+                        this.threadEmptiness[threadName] = true;
+                        for (var i = threads.length; i-- > 0;) {
+                            if (threads[i] && threads[i] !== '=DO=' && threads[i].stack) {
+                                this.threadEmptiness[threadName] = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (this.threadEmptiness[threadName])
+                        continue;
+                }
+
+                if (this.stackFilter) {
+                    hide = true;
+                    for (i = threads.length; i-- > 0;) {
+                        if (threads[i] && threads[i].stack && threads[i].stack.indexOf(this.stackFilter) >= 0) {
+                            hide = false;
+                            break;
+                        }
+                    }
+                    if (hide)
+                        continue;
+                }
+
+                filtered[threadName] = threads;
+            }
+
+            return filtered;
+        }
+
+    },
+
+    methods: {
+        filter: function (threadName, threadsByFile) {
+            var threadsFilter = this.threadsFilter.length > 2 ? this.threadsFilter : '';
+            var stackFilter = this.stackFilter.length > 2 ? this.stackFilter : '';
+            return !threadsFilter || new RegExp(threadsFilter, 'i').test(threadName);
+        }
+    }
+
+});
+
+var app = new Vue({
+    el: '#top',
+
+    data: {
+        activePane: 1,
+        dumps: []
+    },
+
+    computed: {
+
+        threadMap: function () {
+            console.log('Constructing thread map.');
+            var table = {}, lastThreadObj = {};
+
+            for (var i = 0; i < this.dumps.length; ++i) {
+                var dump = this.dumps[i];
+                for (var j = dump.threads.length; j-- > 0;) {
+                    var thread = dump.threads[j];
+                    if (!table[thread.name])
+                        table[thread.name] = new Array(this.dumps.length);
+                    if (lastThreadObj[thread.name]) {
+                        var lastThread = lastThreadObj[thread.name];
+                        if (lastThread.stack === thread.stack && lastThread.status === thread.status) {
+                            lastThread.span = (lastThread.span || 1) + 1;
+                            table[thread.name][i] = '=DO=';
+                            continue;
+                        }
+                    }
+                    table[thread.name][i] = thread;
+                    if (thread)
+                        lastThreadObj[thread.name] = thread;
+                }
+            }
+
+            return table;
+        }
+
+    },
+
+    methods: {
+        drop: onDropped
+    }
+});
+
+function onDropped(e) {
+    var files = e.dataTransfer.files;
+    console.log(files);
+    var dumps = [];
+    var remainingFiles = files.length;
+
+    for (var i = 0, file; file = files[i]; i++) {
+        var reader = new FileReader();
+        reader.onload = getFileReadCallback(file);
+        reader.readAsText(file);
+    }
+
+    function getFileReadCallback(file) {
+        return function (event) {
+            dumps.push(parseDump({
+                id: app.dumps.length,
+                file: file,
+                raw: event.target.result,
+                event: event
+            }));
+            done();
+        }
+    }
+
+    function done() {
+        if (--remainingFiles) return;
+        app.dumps.push.apply(app.dumps, dumps);
+        app.dumps.sort(function (d1, d2) {
+            return d1.time - d2.time;
+        });
+    }
+}
+
+function parseDump(dump) {
+    var blocks = dump.raw.trim().split('\n\n');
+    dump.time = new Date(blocks[0].split('\n')[0]);
+    dump.title = blocks[0].split('\n')[1];
+    dump.threads = [];
+    dump.statusCounts = {};
+    dump.methodCounts = {};
+
+    for (var i = 1; i < blocks.length; i += 2) {
+        if (blocks[i].startsWith('JNI global references: ')) {
+            dump.jniGlobalReferences = parseInt(blocks[i].split(': ')[1]);
+            continue;
+        }
+
+        var lines = blocks[i].split('\n');
+
+        var j = 0;
+        var match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+\])?$/);
+        if (!match) {
+            console.warn('Unable to parse: ', lines[j]);
+            continue;
+        }
+        var thread = {
+            name: match[1],
+            status: Status.get(match[2].trim())
+        };
+
+        ++j;
+        thread.state = Status.UNKNOWN;
+        if (lines[j] && lines[j].trim().startsWith('java.lang.Thread.State: ')) {
+            thread.state = lines[j].split(': ')[j];
+            ++j;
+        }
+
+        if (!lines[j]) {
+            thread.method = '';
+        } else if (lines[j].trim().startsWith('at ')) {
+            thread.method = lines[j].substr(3);
+        }
+
+        thread.stack = lines.slice(j).join('\n');
+
+        dump.threads.push(thread);
+        dump.statusCounts[thread.status.name] = (dump.statusCounts[thread.status.name] || 0) + 1;
+        dump.methodCounts[thread.method] = (dump.methodCounts[thread.method] || 0) + 1;
+    }
+
+    return dump;
+}

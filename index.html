@@ -1,0 +1,176 @@
+<!doctype html>
+<title>Sharat's TDA</title>
+<meta charset="UTF-8">
+
+<link href="styles.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,600|Inconsolata" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+<div id="top" @drop.stop.prevent="drop($event)"
+     @dragover.stop.prevent="$event.dataTransfer.dropEffect = 'copy'">
+
+    <nav>
+        <strong class="logo">ThreaDance</strong>
+        <a href="#threadDumps" :class="{active: activePane === 1}"
+           @click.prevent="activePane = 1">Thread Dumps</a>
+        <a href="#compareView" :class="{active: activePane === 2}"
+           @click.prevent="activePane = 2">Compare Threads</a>
+    </nav>
+
+    <dump-list-pane v-show="activePane === 1" :dumps="dumps" :thread-map="threadMap"></dump-list-pane>
+
+    <compare-thread-pane v-show="activePane === 2" :dumps="dumps" :thread-map="threadMap"></compare-thread-pane>
+
+    <div id="stage" style="display:none">
+        <p>&darr; Drop thread dump files here</p>
+    </div>
+
+</div>
+
+<script type="text/x-template" id="dump-list-tpl">
+    <section class="pane">
+        <aside>
+            <ul class="dumps-list">
+                <li>
+                    <a href="#" @click.prevent="activeDump = null" :class="{active: !activeDump}">Summary</a>
+                </li>
+                <li v-for="(dump, index) in dumps">
+                    <a href="#" @click.prevent="activeDump = dump" :class="{active: activeDump === dump}">
+                        <div class="filename">{{ dump.file.name }}</div>
+                        <time>{{ dump.time }}</time>
+                        <span v-if="index > 0" class="dump-time-diff">
+                            +{{ (dump.time - dumps[index - 1].time) / 1000 }}s</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <section v-if="activeDump">
+            <p>{{ activeDump.time }}</p>
+            <p>Total thread count: {{ activeDump.threads.length }}</p>
+
+            <h2>Status Analysis</h2>
+
+            <!-- POC Bar chart
+            <svg width="100%" height="200px" style="padding: 1em;">
+                <template v-for="(value, key, index) in activeDump.statusCounts">
+                    <rect fill="#b3ebff" x="0" :y="(.5 + index * 1.5) + 'em'"
+                          :width="(100 * value / activeDump.threads.length) + '%'" height="1em"></rect>
+                    <text x="0" :y="(1.5 + index * 1.5) + 'em'" font-family="Inconsolata" font-size="1em">
+                        {{ key }}</text>
+                </template>
+                <rect x="0" y="0" width="100%" height="100%" fill="none" stroke="black"></rect>
+            </svg>
+            -->
+
+            <table>
+                <tr v-for="(value, key) in activeDump.statusCounts">
+                    <td>{{ key }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+            </table>
+
+            <h2>Method Analysis</h2>
+            <table>
+                <tr v-for="(value, key) in activeDump.methodCounts">
+                    <td>{{ key || 'NO JAVA STACK' }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+            </table>
+
+            <h2>Threads</h2>
+            <ul>
+                <li v-for="thread in activeDump.threads">
+                    {{ thread.name }} {{ thread.status.name }}
+                </li>
+            </ul>
+        </section>
+
+        <section v-else>
+            <h1>Summary</h1>
+
+            <table v-if="dumps.length">
+                <tr>
+                    <th>Thread dumps</th>
+                    <td style="text-align: right;">{{ dumps.length }}</td>
+                </tr>
+                <tr>
+                    <th>Oldest dump time</th>
+                    <td>{{ dumps[0].time }}</td>
+                </tr>
+                <tr>
+                    <th>Latest dump time</th>
+                    <td>{{ dumps[dumps.length - 1].time }}</td>
+                </tr>
+            </table>
+
+            <!-- Not a very clever list, yet.
+            <h2>Hang Suspects</h2>
+            <p>There's {{ hangSuspects.length }} suspects.</p>
+            <ol>
+                <li v-for="thread in hangSuspects">
+                    {{ thread.name }}
+                </li>
+            </ol>
+            -->
+        </section>
+    </section>
+</script>
+
+<script type="text/x-template" id="compare-thread-tpl">
+    <section class="pane">
+        <div style="height: 24px;">
+            <label>
+                <span>Filter Threads:</span>
+                <input type="search" placeholder="Filter Threads..." v-model="threadsFilter">
+            </label>
+            <label>
+                <span>Filter Stack Traces:</span>
+                <input type="search" placeholder="Filter Stack Traces..." v-model="stackFilter">
+            </label>
+            <label>
+                <input type="checkbox" v-model="showEmptyThreads">
+                <span>Show threads with empty stack</span>
+            </label>
+            <button type="button" @click="threadsFilter = stackFilter = ''"><i class="fa fa-times"></i> Clear</button>
+        </div>
+
+        <div class="upper-pane" style="overflow: auto"
+             :style="{height: activeThread ? 'calc(100% - 224px)' : 'calc(100% - 24px)'}">
+            <table class="thread-compare">
+                <thead>
+                <tr>
+                    <th>Thread</th>
+                    <th v-for="dump in dumps">{{ dump.file.name }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(threads, threadName) in threadMapFiltered">
+                    <td style="max-width: 220px">{{ threadName }}</td>
+                    <td v-for="thread in threads" @click="activeThread = thread || activeThread"
+                        :class="[thread ? thread.status.name : '', {active: activeThread === thread}]"
+                        v-if="thread !== '=DO='" :colspan="thread && thread.span || 1">
+                        <span v-if="thread">
+                            <i class="fa fa-fw" :class="thread.status.icon"></i>
+                            {{ thread.method }}
+                        </span>
+                        <em v-else>~~Not present~~</em>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="lower-pane" style="height: 200px; overflow: auto" v-if="activeThread">
+            <a href="#" class="close-btn" @click.prevent="activeThread = null">
+                <i class="fa fa-window-close"></i> Close</a>
+            <h2>{{ activeThread.name }}
+                <small>({{ activeThread.status.raw }})</small>
+            </h2>
+            <pre>{{ activeThread.stack || 'No Stack Trace' }}</pre>
+        </div>
+    </section>
+</script>
+
+<script src="https://unpkg.com/vue"></script>
+<script src="app.js"></script>
