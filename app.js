@@ -44,7 +44,6 @@ Vue.component('dump-list-pane', {
             for (var threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
                 var threads = this.threadMap[threadName];
-                var isSuspect = true, isMissing = true;
 
                 if (!threads[threads.length - 1])
                     continue;
@@ -112,7 +111,7 @@ Vue.component('compare-thread-pane', {
                 }
 
                 if (this.stackFilter) {
-                    hide = true;
+                    var hide = true;
                     for (i = threads.length; i-- > 0;) {
                         if (threads[i] && threads[i].stack && threads[i].stack.indexOf(this.stackFilter) >= 0) {
                             hide = false;
@@ -129,14 +128,6 @@ Vue.component('compare-thread-pane', {
             return filtered;
         }
 
-    },
-
-    methods: {
-        filter: function (threadName, threadsByFile) {
-            var threadsFilter = this.threadsFilter.length > 2 ? this.threadsFilter : '';
-            var stackFilter = this.stackFilter.length > 2 ? this.stackFilter : '';
-            return !threadsFilter || new RegExp(threadsFilter, 'i').test(threadName);
-        }
     }
 
 });
@@ -235,7 +226,7 @@ function parseDump(dump) {
         var lines = blocks[i].split('\n');
 
         var j = 0;
-        var match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+\])?$/);
+        var match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+])?$/);
         if (!match) {
             console.warn('Unable to parse: ', lines[j]);
             continue;
