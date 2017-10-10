@@ -81,11 +81,88 @@ Vue.component('compare-thread-pane', {
 
     computed: {
 
+        emptyThreads: function () {
+            console.log('Building empty thread list.');
+            var emptyThreadNames = [];
+
+            for (var threadName in this.threadMap) {
+                if (!this.threadMap.hasOwnProperty(threadName)) continue;
+                var threads = this.threadMap[threadName], isEmpty = true;
+                for (var i = threads.length; i-- > 0;) {
+                    if (threads[i].stack) {
+                        isEmpty = false;
+                        break;
+                    }
+                }
+                if (isEmpty)
+                    emptyThreadNames.push(threadName);
+            }
+
+            return emptyThreadNames;
+        },
+
+        stackIndex: function () {
+            console.log('Building stack index.');
+            var words = [], map = {}, indexSize = 0;
+
+            for (var threadName in this.threadMap) {
+                if (!this.threadMap.hasOwnProperty(threadName)) continue;
+                var threads = this.threadMap[threadName];
+                for (var i = 0; i <= threads.length; ++i) {
+                    var thread = threads[i];
+                    if (!thread)
+                        continue;
+
+                    var tokens = thread.stack.split(/\W+/);
+                    for (var k = tokens.length; k-- > 0;) {
+                        var tok = tokens[k].toLowerCase();
+
+                        if (!tok || tok.match(/^\d+$/))
+                            continue;
+
+                        if (!map[tok]) {
+                            map[tok] = {};
+                            words.push(tok);
+                        }
+
+                        indexSize += map[tok][thread.name] ? 0 : 1;
+                        map[tok][thread.name] = 1;
+                    }
+
+                    if (thread.span)
+                        i += thread.span - 1;
+                }
+            }
+
+            console.log('Index Size:', indexSize);
+            console.log('Words in index:', words.length);
+            console.log(map);
+            words.sort();
+
+            return {
+                words: words,
+                map: map
+            };
+        },
+
         threadMapFiltered: function () {
             console.log('Filtering thread map.');
 
             if (this.showEmptyThreads && !this.threadsFilter && !this.stackFilter)
                 return this.threadMap;
+
+            if (this.stackFilter) {
+                var index = this.stackIndex, needle = this.stackFilter.toLowerCase();
+                var stackMatchedThreads = {};
+                for (var i = index.words.length; i-- > 0;) {
+                    if (index.words[i].indexOf(needle) >= 0) {
+                        var matched = index.map[index.words[i]];
+                        for (var key in matched)
+                            if (matched.hasOwnProperty(key))
+                                stackMatchedThreads[key] = 1;
+                    }
+                }
+            }
 
             var filtered = {};
 
@@ -97,29 +174,12 @@ Vue.component('compare-thread-pane', {
                     continue;
 
                 if (!this.showEmptyThreads) {
-                    if (!this.threadEmptiness.hasOwnProperty(threadName)) {
-                        this.threadEmptiness[threadName] = true;
-                        for (var i = threads.length; i-- > 0;) {
-                            if (threads[i] && threads[i] !== '=DO=' && threads[i].stack) {
-                                this.threadEmptiness[threadName] = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (this.threadEmptiness[threadName])
+                    if (this.emptyThreads.indexOf(threadName) >= 0)
                         continue;
                 }
 
-                if (this.stackFilter) {
-                    var hide = true;
-                    for (i = threads.length; i-- > 0;) {
-                        if (threads[i] && threads[i].stack && threads[i].stack.indexOf(this.stackFilter) >= 0) {
-                            hide = false;
-                            break;
-                        }
-                    }
-                    if (hide)
-                        continue;
+                if (this.stackFilter && !stackMatchedThreads[threadName]) {
+                    continue;
                 }
 
                 filtered[threadName] = threads;
