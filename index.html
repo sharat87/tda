@@ -129,8 +129,8 @@
                 <input type="search" placeholder="Filter Stack Traces..." v-model="stackFilter">
             </label>
             <label>
-                <input type="checkbox" v-model="showEmptyThreads">
-                <span>Show threads with empty stack</span>
+                <input type="checkbox" v-model="hideEmptyThreads">
+                <span>Hide threads with empty stack</span>
             </label>
             <button type="button" @click="threadsFilter = stackFilter = ''"><i class="fa fa-times"></i> Clear</button>
         </div>
@@ -145,7 +145,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(threads, threadName) in threadMapFiltered">
+                <tr v-for="(threads, threadName) in threadMapFiltered" v-show="threads._show">
                     <td style="max-width: 220px">{{ threadName }}</td>
                     <td v-for="thread in threads" @click="activeThread = thread || activeThread"
                         :class="[thread ? thread.status.name : '', {active: activeThread === thread}]"

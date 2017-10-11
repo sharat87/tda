@@ -74,7 +74,7 @@ Vue.component('compare-thread-pane', {
             activeThread: null,
             threadsFilter: '',
             stackFilter: '',
-            showEmptyThreads: true,
+            hideEmptyThreads: false,
             threadEmptiness: {}
         }
     },
@@ -89,7 +89,7 @@ Vue.component('compare-thread-pane', {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
                 var threads = this.threadMap[threadName], isEmpty = true;
                 for (var i = threads.length; i-- > 0;) {
-                    if (threads[i].stack) {
+                    if (threads[i] && threads[i].stack) {
                         isEmpty = false;
                         break;
                     }
@@ -103,7 +103,7 @@ Vue.component('compare-thread-pane', {
 
         stackIndex: function () {
             console.log('Building stack index.');
-            var words = [], map = {}, indexSize = 0;
+            var words = [], map = {};
 
             for (var threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
@@ -117,7 +117,7 @@ Vue.component('compare-thread-pane', {
                     for (var k = tokens.length; k-- > 0;) {
                         var tok = tokens[k].toLowerCase();
 
-                        if (!tok || tok.match(/^\d+$/))
+                        if (!tok || tok === 'at' || tok.match(/^\d+$/))
                             continue;
 
                         if (!map[tok]) {
@@ -125,7 +125,6 @@ Vue.component('compare-thread-pane', {
                             words.push(tok);
                         }
 
-                        indexSize += map[tok][thread.name] ? 0 : 1;
                         map[tok][thread.name] = 1;
                     }
 
@@ -134,7 +133,6 @@ Vue.component('compare-thread-pane', {
                 }
             }
 
-            console.log('Index Size:', indexSize);
             console.log('Words in index:', words.length);
             console.log(map);
             words.sort();
@@ -148,8 +146,7 @@ Vue.component('compare-thread-pane', {
         threadMapFiltered: function () {
             console.log('Filtering thread map.');
 
-            if (this.showEmptyThreads && !this.threadsFilter && !this.stackFilter)
-                return this.threadMap;
+            // TODO: Search among previous search results, when possible.
 
             if (this.stackFilter) {
                 var index = this.stackIndex, needle = this.stackFilter.toLowerCase();
@@ -164,28 +161,24 @@ Vue.component('compare-thread-pane', {
                 }
             }
 
-            var filtered = {};
-
             for (var threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                var threads = this.threadMap[threadName];
 
-                if (this.threadsFilter && threadName.indexOf(this.threadsFilter) < 0)
-                    continue;
+                var show = true;
+                if (this.hideEmptyThreads && this.emptyThreads.indexOf(threadName) >= 0)
+                    show = false;
 
-                if (!this.showEmptyThreads) {
-                    if (this.emptyThreads.indexOf(threadName) >= 0)
-                        continue;
-                }
+                else if (this.threadsFilter && threadName.indexOf(this.threadsFilter) < 0)
+                    show = false;
 
-                if (this.stackFilter && !stackMatchedThreads[threadName]) {
-                    continue;
-                }
+                else if (this.stackFilter && !stackMatchedThreads[threadName])
+                    show = false;
 
-                filtered[threadName] = threads;
+                this.threadMap[threadName]._show = show;
             }
 
-            return filtered;
+            console.log('Done filtering.');
+            return this.threadMap;
         }
 
     }
