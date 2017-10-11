@@ -13,7 +13,7 @@
         <strong class="logo">ThreaDance</strong>
         <a href="#" :class="{active: activePane === 1}" @click.prevent="activePane = 1">Thread Dumps</a>
         <a href="#" :class="{active: activePane === 2}" @click.prevent="activePane = 2">Compare Threads</a>
-        <a href="#" @click.prevent="showAboutOverlay = true">About</a>
+        <a href="#" class="about-link" @click.prevent="showAboutOverlay = true">About</a>
     </nav>
 
     <dump-list-pane v-show="activePane === 1" :dumps="dumps" :thread-map="threadMap"></dump-list-pane>

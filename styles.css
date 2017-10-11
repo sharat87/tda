@@ -42,6 +42,12 @@ input, button {
     text-decoration: underline;
 }
 
+.about-link {
+    float: right;
+    background-color: #841;
+    color: #FFF;
+}
+
 .mask {
     position: fixed;
     left: 0;
