@@ -196,8 +196,8 @@ table.thread-compare .active {
 
 .close-btn {
     position: absolute;
-    padding: 3px 6px;
     right: 1em;
     top: 1em;
     color: #E00;
+    transform: scale(1.5);
 }
