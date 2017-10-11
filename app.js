@@ -246,12 +246,11 @@ function onDropped(e) {
 
     function getFileReadCallback(file) {
         return function (event) {
-            dumps.push(parseDump({
-                id: app.dumps.length,
-                file: file,
-                raw: event.target.result,
-                event: event
-            }));
+            var dump = parseDump(event.target.result);
+            dump.id = app.dumps.length;
+            dump.file = file;
+            dump.event = event;
+            dumps.push(dump);
             done();
         }
     }
@@ -266,8 +265,8 @@ function onDropped(e) {
     }
 }
 
-function parseDump(dump) {
-    var blocks = dump.raw.trim().split('\n\n');
+function parseDump(text) {
+    var dump = {raw: text}, blocks = text.trim().split('\n\n');
     dump.time = new Date(blocks[0].split('\n')[0]);
     dump.title = blocks[0].split('\n')[1];
     dump.threads = [];

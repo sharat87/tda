@@ -139,7 +139,8 @@
                 <input type="checkbox" v-model="hideEmptyThreads">
                 <span>Hide threads with empty stack</span>
             </label>
-            <button type="button" @click="threadsFilter = stackFilter = ''"><i class="fa fa-times"></i> Clear</button>
+            <button type="button" @click="threadsFilter = stackFilter = ''; hideEmptyThreads = false">
+                <i class="fa fa-times"></i> Clear</button>
         </div>
 
         <div class="upper-pane" style="overflow: auto"
