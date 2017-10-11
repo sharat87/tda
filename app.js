@@ -190,7 +190,9 @@ var app = new Vue({
 
     data: {
         activePane: 1,
-        dumps: []
+        dumps: [],
+        showAboutOverlay: true,
+        isLoading: false
     },
 
     computed: {
@@ -234,6 +236,7 @@ function onDropped(e) {
     console.log(files);
     var dumps = [];
     var remainingFiles = files.length;
+    app.isLoading = true;
 
     for (var i = 0, file; file = files[i]; i++) {
         var reader = new FileReader();
@@ -259,6 +262,7 @@ function onDropped(e) {
         app.dumps.sort(function (d1, d2) {
             return d1.time - d2.time;
         });
+        app.isLoading = app.showAboutOverlay = false;
     }
 }
 

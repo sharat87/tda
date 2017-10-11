@@ -11,19 +11,26 @@
 
     <nav>
         <strong class="logo">ThreaDance</strong>
-        <a href="#threadDumps" :class="{active: activePane === 1}"
-           @click.prevent="activePane = 1">Thread Dumps</a>
-        <a href="#compareView" :class="{active: activePane === 2}"
-           @click.prevent="activePane = 2">Compare Threads</a>
+        <a href="#" :class="{active: activePane === 1}" @click.prevent="activePane = 1">Thread Dumps</a>
+        <a href="#" :class="{active: activePane === 2}" @click.prevent="activePane = 2">Compare Threads</a>
+        <a href="#" @click.prevent="showAboutOverlay = true">About</a>
     </nav>
 
     <dump-list-pane v-show="activePane === 1" :dumps="dumps" :thread-map="threadMap"></dump-list-pane>
 
     <compare-thread-pane v-show="activePane === 2" :dumps="dumps" :thread-map="threadMap"></compare-thread-pane>
 
-    <div id="stage" style="display:none">
-        <p>&darr; Drop thread dump files here</p>
-    </div>
+    <div class="mask" v-show="isLoading || showAboutOverlay"></div>
+
+    <section class="about-overlay" v-if="showAboutOverlay">
+        <h1>Welcome to Sharat's TDA</h1>
+        <p>This is a java thread dump analyser program written in JavaScript (using
+            <a href="https://vuejs.org" target="_blank">vue.js</a>). You may drop thread dump files anywhere on this
+            page and they will be processed entirely client side. There is no server-side processing capability.</p>
+        <p>A project by <a href="http://www.sharats.me" target="_blank">The Sharat's</a>.</p>
+        <a href="#" class="close-btn" @click.prevent="showAboutOverlay = false" v-show="dumps.length">
+            <i class="fa fa-window-close"></i></a>
+    </section>
 
 </div>
 
@@ -161,9 +168,9 @@
             </table>
         </div>
 
-        <div class="lower-pane" style="height: 200px; overflow: auto" v-if="activeThread">
+        <div class="lower-pane" style="height: 200px; overflow: auto; position: relative" v-if="activeThread">
             <a href="#" class="close-btn" @click.prevent="activeThread = null">
-                <i class="fa fa-window-close"></i> Close</a>
+                <i class="fa fa-window-close"></i></a>
             <h2>{{ activeThread.name }}
                 <small>({{ activeThread.status.raw }})</small>
             </h2>

@@ -21,18 +21,34 @@ input, button {
     font: inherit;
 }
 
-#stage {
-    width: 100%;
-    height: 10em;
-    background-color: maroon;
-    text-align: center;
+.about-overlay {
+    border: 3px solid #841;
+    background-color: #FFF;
+    box-shadow: 6px 6px 72px rgba(0, 0, 0, .3);
     padding: 1em;
-    color: white;
-    border-radius: 1em;
+    border-radius: 3px;
+    position: absolute;
+    top: 2em;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-#stage p {
-    font-size: 2em;
+.about-overlay h1 {
+    text-align: center;
+}
+
+.about-overlay p a {
+    color: #09f;
+    text-decoration: underline;
+}
+
+.mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(256, 256, 256, .8);
 }
 
 a {
@@ -173,6 +189,9 @@ table.thread-compare .active {
 }
 
 .close-btn {
-    float: right;
+    position: absolute;
     padding: 3px 6px;
+    right: 1em;
+    top: 1em;
+    color: #E00;
 }
