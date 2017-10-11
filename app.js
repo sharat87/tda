@@ -273,13 +273,18 @@ function parseDump(text) {
     dump.statusCounts = {};
     dump.methodCounts = {};
 
-    for (var i = 1; i < blocks.length; i += 2) {
+    for (var i = 1; i < blocks.length; ++i) {
         if (blocks[i].startsWith('JNI global references: ')) {
             dump.jniGlobalReferences = parseInt(blocks[i].split(': ')[1]);
             continue;
         }
 
         var lines = blocks[i].split('\n');
+
+        if (lines[0].trim() === 'Locked ownable synchronizers:') {
+            // TODO: Locked ownable synchronizers data discarded.
+            continue;
+        }
 
         var j = 0;
         var match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+])?$/);
