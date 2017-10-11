@@ -84,8 +84,9 @@ nav a.active {
     overflow: auto;
 }
 
-.pane > h1:first-child {
-    margin-top: 0;
+.pane h1:first-child {
+    margin: 3px 0;
+    font-size: 2em;
 }
 
 .pane > aside {
@@ -99,6 +100,7 @@ nav a.active {
 .pane > section {
     height: 100%;
     overflow: auto;
+    padding: 0 1em;
 }
 
 .dumps-list {
@@ -143,8 +145,19 @@ table {
     overflow-x: auto;
 }
 
-td {
+td.val {
     min-width: 60px;
+    text-align: right;
+}
+
+td.bar {
+    min-width: 160px;
+}
+
+td.bar > * {
+    height: 1em;
+    background-color: #da6400;
+    border-radius: 0 3px 3px 0;
 }
 
 th {
@@ -154,6 +167,11 @@ th {
 
 tr:hover {
     background-color: rgba(0, 0, 0, .05);
+}
+
+table.stats-table td {
+    border: 1px solid rgba(0, 0, 0, .1);
+    padding: 3px 6px;
 }
 
 table.thread-compare {

@@ -26,6 +26,30 @@ var Status = {
     }
 };
 
+Vue.component('f-time', {
+    template: '<time>{{ formattedTime }}</time>',
+    props: ['time'],
+    computed: {
+        formattedTime: function () {
+            var minutes = this.time.getUTCMinutes(), seconds = this.time.getUTCSeconds();
+            var monthNames = [
+                "January", "February", "March",
+                "April", "May", "June", "July",
+                "August", "September", "October",
+                "November", "December"
+            ];
+            return this.time.getUTCHours() + ':' + (minutes > 9 ? '' : '0') + minutes + ':' + (seconds > 9 ? '' : '0') +
+                seconds + ', ' + this.time.getUTCDate() + ' ' + monthNames[this.time.getUTCMonth()] + ' ' +
+                this.time.getUTCFullYear();
+        }
+    }
+});
+
+// FIXME: Not working!
+Vue.component('close-btn', {
+    template: '<a href="#" class="close-btn"><i class="fa fa-window-close"></i></a>'
+});
+
 Vue.component('dump-list-pane', {
     template: document.getElementById('dump-list-tpl').textContent,
     props: ['dumps', 'threadMap'],
@@ -266,12 +290,17 @@ function onDropped(e) {
 }
 
 function parseDump(text) {
-    var dump = {raw: text}, blocks = text.trim().split('\n\n');
+    var blocks = text.trim().split('\n\n');
+    var dump = {
+        title: blocks[0].split('\n')[1],
+        threads: [],
+        raw: text,
+        statusCounts: [],
+        methodCounts: []
+    };
+
     dump.time = new Date(blocks[0].split('\n')[0]);
-    dump.title = blocks[0].split('\n')[1];
-    dump.threads = [];
-    dump.statusCounts = {};
-    dump.methodCounts = {};
+    var statusCountsMap = {}, methodCountsMap = {};
 
     for (var i = 1; i < blocks.length; ++i) {
         if (blocks[i].startsWith('JNI global references: ')) {
@@ -313,9 +342,34 @@ function parseDump(text) {
         thread.stack = lines.slice(j).join('\n');
 
         dump.threads.push(thread);
-        dump.statusCounts[thread.status.name] = (dump.statusCounts[thread.status.name] || 0) + 1;
-        dump.methodCounts[thread.method] = (dump.methodCounts[thread.method] || 0) + 1;
+        statusCountsMap[thread.status.name] = (statusCountsMap[thread.status.name] || 0) + 1;
+        methodCountsMap[thread.method] = (methodCountsMap[thread.method] || 0) + 1;
     }
 
+    var percentFactor = 100 / dump.threads.length;
+    for (var key in statusCountsMap) {
+        if (statusCountsMap.hasOwnProperty(key))
+            dump.statusCounts.push({
+                status: key,
+                count: statusCountsMap[key],
+                percentage: Math.round(percentFactor * statusCountsMap[key])
+            });
+    }
+    dump.statusCounts.sort(countSorter);
+
+    for (key in methodCountsMap) {
+        if (methodCountsMap.hasOwnProperty(key))
+            dump.methodCounts.push({
+                method: key,
+                count: methodCountsMap[key],
+                percentage: Math.round(percentFactor * methodCountsMap[key])
+            });
+    }
+    dump.methodCounts.sort(countSorter);
+
     return dump;
+
+    function countSorter(a, b) {
+        return b.count - a.count;
+    }
 }

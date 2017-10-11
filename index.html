@@ -46,7 +46,7 @@
                 <li v-for="(dump, index) in dumps">
                     <a href="#" @click.prevent="activeDump = dump" :class="{active: activeDump === dump}">
                         <div class="filename">{{ dump.file.name }}</div>
-                        <time>{{ dump.time }}</time>
+                        <f-time :time="dump.time"></f-time>
                         <span v-if="index > 0" class="dump-time-diff">
                             +{{ (dump.time - dumps[index - 1].time) / 1000 }}s</span>
                     </a>
@@ -55,7 +55,8 @@
         </aside>
 
         <section v-if="activeDump">
-            <p>{{ activeDump.time }}</p>
+            <h1>{{ activeDump.file.name }}</h1>
+            <f-time :time="activeDump.time"></f-time>
             <p>Total thread count: {{ activeDump.threads.length }}</p>
 
             <h2>Status Analysis</h2>
@@ -72,18 +73,22 @@
             </svg>
             -->
 
-            <table>
-                <tr v-for="(value, key) in activeDump.statusCounts">
-                    <td>{{ key }}</td>
-                    <td>{{ value }}</td>
+            <table class="stats-table">
+                <tr v-for="stat in activeDump.statusCounts">
+                    <td>{{ stat.status }}</td>
+                    <td class="val">{{ stat.count }}</td>
+                    <td class="val">{{ stat.percentage }}%</td>
+                    <td class="bar"><div :style="{width: stat.percentage + '%'}"></div></td>
                 </tr>
             </table>
 
             <h2>Method Analysis</h2>
-            <table>
-                <tr v-for="(value, key) in activeDump.methodCounts">
-                    <td>{{ key || 'NO JAVA STACK' }}</td>
-                    <td>{{ value }}</td>
+            <table class="stats-table">
+                <tr v-for="stat in activeDump.methodCounts">
+                    <td>{{ stat.method || 'NO JAVA STACK' }}</td>
+                    <td class="val">{{ stat.count }}</td>
+                    <td class="val">{{ stat.percentage }}%</td>
+                    <td class="bar"><div :style="{width: stat.percentage + '%'}"></div></td>
                 </tr>
             </table>
 
@@ -142,7 +147,8 @@
                 <span>Hide threads with empty stack</span>
             </label>
             <button type="button" @click="threadsFilter = stackFilter = ''; hideEmptyThreads = false">
-                <i class="fa fa-times"></i> Clear</button>
+                <i class="fa fa-times"></i> Clear
+            </button>
         </div>
 
         <div class="upper-pane" style="overflow: auto"
