@@ -140,7 +140,7 @@ Vue.component('compare-thread-pane', {
 
         stackIndex: function () {
             console.log('Building stack index.');
-            const words = [], map = {};
+            const words = new Set(), map = new Map();
 
             for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
@@ -157,12 +157,12 @@ Vue.component('compare-thread-pane', {
                         if (!tok || tok === 'at' || tok.match(/^\d+$/))
                             continue;
 
-                        if (!map[tok]) {
-                            map[tok] = {};
-                            words.push(tok);
+                        if (map.has(tok)) {
+                            map.get(tok).add(thread.name);
+                        } else {
+                            map.set(tok, new Set([thread.name]));
+                            words.add(tok);
                         }
-
-                        map[tok][thread.name] = 1;
                     }
 
                     if (thread.span)
@@ -170,9 +170,8 @@ Vue.component('compare-thread-pane', {
                 }
             }
 
-            console.log('Words in index:', words.length);
+            console.log('Words in index:', words.size);
             console.log(map);
-            words.sort();
 
             return {
                 words: words,
@@ -188,14 +187,12 @@ Vue.component('compare-thread-pane', {
             const stackMatchedThreads = {};
             if (this.stackFilter) {
                 const index = this.stackIndex, needle = this.stackFilter.toLowerCase();
-                for (let i = index.words.length; i-- > 0;) {
-                    if (index.words[i].indexOf(needle) >= 0) {
-                        const matched = index.map[index.words[i]];
-                        for (const key in matched)
-                            if (matched.hasOwnProperty(key))
-                                stackMatchedThreads[key] = 1;
+                for (let word of index.words)
+                    if (word.indexOf(needle) >= 0) {
+                        const matched = index.map.get(word);
+                        for (const key of matched)
+                            stackMatchedThreads[key] = 1;
                     }
-                }
             }
 
             for (const threadName in this.threadMap) {
