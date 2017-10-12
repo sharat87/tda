@@ -119,7 +119,7 @@ Vue.component('compare-thread-pane', {
             activeThread: null,
             threadsFilter: '',
             stackFilter: '',
-            hideEmptyThreads: false,
+            hideEmptyThreads: true,
             threadEmptiness: {}
         }
     },
