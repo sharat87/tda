@@ -1,3 +1,14 @@
+Set.prototype.union = function (setB) {
+    for (const elem of setB)
+        this.add(elem);
+};
+
+Set.prototype.intersect = function (setB) {
+    for (const elem of this)
+        if (!setB.has(elem))
+            this.delete(elem);
+};
+
 const Status = {
     DEADLOCK: {name: 'DEADLOCK', raw: '', icon: 'fa-question-circle'},
     RUNNABLE: {name: 'RUNNABLE', raw: 'runnable', icon: 'fa-play-circle-o'},
@@ -137,7 +148,7 @@ Vue.component('compare-thread-pane', {
 
         stackIndex: function () {
             console.log('Building stack index.');
-            const words = new Set(), map = new Map();
+            const index = new Map();
 
             for (const [threadName, item] of this.threadMap) {
                 const threads = item.threads;
@@ -153,11 +164,10 @@ Vue.component('compare-thread-pane', {
                         if (!tok || tok === 'at' || tok.match(/^\d+$/))
                             continue;
 
-                        if (map.has(tok)) {
-                            map.get(tok).add(threadName);
+                        if (index.has(tok)) {
+                            index.get(tok).add(threadName);
                         } else {
-                            map.set(tok, new Set([threadName]));
-                            words.add(tok);
+                            index.set(tok, new Set([threadName]));
                         }
                     }
 
@@ -166,27 +176,31 @@ Vue.component('compare-thread-pane', {
                 }
             }
 
-            console.log('Words in index:', words.size);
-            console.log(map);
+            console.log('Words in index:', index.size);
+            console.log(index);
 
-            return {
-                words: words,
-                map: map
-            };
+            return index;
         },
 
         stackMatchedThreads: function () {
             if (!this.stackFilter) return null;
 
             const stackMatchedThreads = new Set();
+            const needles = this.stackFilter.toLowerCase().split(/\W+/);
 
-            const index = this.stackIndex, needle = this.stackFilter.toLowerCase();
-            for (let word of index.words)
-                if (word.indexOf(needle) >= 0) {
-                    const matched = index.map.get(word);
-                    for (const key of matched)
-                        stackMatchedThreads.add(key);
+            for (const needle of needles) {
+                const matches = new Set();
+
+                for (const [word, threadNames] of this.stackIndex) {
+                    if (word.indexOf(needle) >= 0)
+                        matches.union(threadNames);
                 }
+
+                if (stackMatchedThreads.size > 0)
+                    stackMatchedThreads.intersect(matches);
+                else
+                    stackMatchedThreads.union(matches);
+            }
 
             return stackMatchedThreads;
         },
