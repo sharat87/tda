@@ -93,11 +93,23 @@
             </table>
 
             <h2>Threads</h2>
-            <ul>
-                <li v-for="thread in activeDump.threads">
-                    {{ thread.name }} {{ thread.status.name }}
-                </li>
-            </ul>
+            <div>
+                <input type="search" v-model="threadFilter" placeholder="Filter threads...">
+            </div>
+            <table>
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="thread in activeDumpThreadsFiltered">
+                    <td>{{ thread.name }}</td>
+                    <td>{{ thread.status.name }}</td>
+                </tr>
+                </tbody>
+            </table>
         </section>
 
         <section v-else>

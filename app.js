@@ -56,7 +56,8 @@ Vue.component('dump-list-pane', {
 
     data: function () {
         return {
-            activeDump: null
+            activeDump: null,
+            threadFilter: ''
         };
     },
 
@@ -83,6 +84,22 @@ Vue.component('dump-list-pane', {
                 return t1.name < t2.name ? -1 : 1;
             });
             return hangSuspects;
+        },
+
+        activeDumpThreadsFiltered: function () {
+            if (!this.activeDump) return [];
+            var filtered = [], needle = this.threadFilter;
+
+            if (!needle)
+                return this.activeDump.threads;
+
+            for (var i = 0; i < this.activeDump.threads.length; ++i) {
+                if (this.activeDump.threads[i].name.indexOf(needle) >= 0) {
+                    filtered.push(this.activeDump.threads[i]);
+                }
+            }
+
+            return filtered;
         }
 
     }
