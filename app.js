@@ -119,7 +119,7 @@ Vue.component('compare-thread-pane', {
 
         emptyThreads: function () {
             console.log('Building empty thread list.');
-            const emptyThreadNames = [];
+            const emptyThreadNames = new Set();
 
             for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
@@ -132,7 +132,7 @@ Vue.component('compare-thread-pane', {
                     }
                 }
                 if (isEmpty)
-                    emptyThreadNames.push(threadName);
+                    emptyThreadNames.add(threadName);
             }
 
             return emptyThreadNames;
@@ -202,7 +202,7 @@ Vue.component('compare-thread-pane', {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
 
                 let show = true;
-                if (this.hideEmptyThreads && this.emptyThreads.indexOf(threadName) >= 0)
+                if (this.hideEmptyThreads && this.emptyThreads.has(threadName))
                     show = false;
 
                 else if (this.threadsFilter && threadName.indexOf(this.threadsFilter) < 0)
