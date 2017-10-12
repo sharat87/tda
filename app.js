@@ -179,21 +179,26 @@ Vue.component('compare-thread-pane', {
             };
         },
 
+        stackMatchedThreads: function () {
+            if (!this.stackFilter) return null;
+
+            const stackMatchedThreads = new Set();
+
+            const index = this.stackIndex, needle = this.stackFilter.toLowerCase();
+            for (let word of index.words)
+                if (word.indexOf(needle) >= 0) {
+                    const matched = index.map.get(word);
+                    for (const key of matched)
+                        stackMatchedThreads.add(key);
+                }
+
+            return stackMatchedThreads;
+        },
+
         threadMapFiltered: function () {
             console.log('Filtering thread map.');
 
             // TODO: Search among previous search results, when possible.
-
-            const stackMatchedThreads = {};
-            if (this.stackFilter) {
-                const index = this.stackIndex, needle = this.stackFilter.toLowerCase();
-                for (let word of index.words)
-                    if (word.indexOf(needle) >= 0) {
-                        const matched = index.map.get(word);
-                        for (const key of matched)
-                            stackMatchedThreads[key] = 1;
-                    }
-            }
 
             for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
@@ -205,7 +210,7 @@ Vue.component('compare-thread-pane', {
                 else if (this.threadsFilter && threadName.indexOf(this.threadsFilter) < 0)
                     show = false;
 
-                else if (this.stackFilter && !stackMatchedThreads[threadName])
+                else if (this.stackFilter && !this.stackMatchedThreads.has(threadName))
                     show = false;
 
                 this.threadMap[threadName]._show = show;
