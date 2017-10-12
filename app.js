@@ -72,7 +72,7 @@ Vue.component('dump-list-pane', {
         hangSuspects: function () {
             const hangSuspects = [];
 
-            for (const [threadName, item] of this.threadMap) {
+            for (const item of this.threadMap.values()) {
                 const threads = item.threads;
                 if (!threads[threads.length - 1])
                     continue;
