@@ -1,4 +1,4 @@
-var Status = {
+const Status = {
     DEADLOCK: {name: 'DEADLOCK', raw: '', icon: 'fa-question-circle'},
     RUNNABLE: {name: 'RUNNABLE', raw: 'runnable', icon: 'fa-play-circle-o'},
     WAIT_CONDITION: {name: 'WAIT_CONDITION', raw: 'waiting on condition', icon: 'fa-moon-o'},
@@ -31,13 +31,8 @@ Vue.component('f-time', {
     props: ['time'],
     computed: {
         formattedTime: function () {
-            var minutes = this.time.getUTCMinutes(), seconds = this.time.getUTCSeconds();
-            var monthNames = [
-                "January", "February", "March",
-                "April", "May", "June", "July",
-                "August", "September", "October",
-                "November", "December"
-            ];
+            const minutes = this.time.getUTCMinutes(), seconds = this.time.getUTCSeconds();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             return this.time.getUTCHours() + ':' + (minutes > 9 ? '' : '0') + minutes + ':' + (seconds > 9 ? '' : '0') +
                 seconds + ', ' + this.time.getUTCDate() + ' ' + monthNames[this.time.getUTCMonth()] + ' ' +
                 this.time.getUTCFullYear();
@@ -64,17 +59,17 @@ Vue.component('dump-list-pane', {
     computed: {
 
         hangSuspects: function () {
-            var hangSuspects = [];
+            const hangSuspects = [];
 
-            for (var threadName in this.threadMap) {
+            for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                var threads = this.threadMap[threadName];
+                const threads = this.threadMap[threadName];
 
                 if (!threads[threads.length - 1])
                     continue;
 
-                for (var i = threads.length; i-- > 0;) {
-                    var thread = threads[i];
+                for (let i = threads.length; i-- > 0;) {
+                    const thread = threads[i];
                     if (thread !== '=DO=' && thread.status.name.indexOf('WAIT') >= 0)
                         hangSuspects.push(thread);
                 }
@@ -88,12 +83,12 @@ Vue.component('dump-list-pane', {
 
         activeDumpThreadsFiltered: function () {
             if (!this.activeDump) return [];
-            var filtered = [], needle = this.threadFilter;
+            const filtered = [], needle = this.threadFilter;
 
             if (!needle)
                 return this.activeDump.threads;
 
-            for (var i = 0; i < this.activeDump.threads.length; ++i) {
+            for (let i = 0; i < this.activeDump.threads.length; ++i) {
                 if (this.activeDump.threads[i].name.indexOf(needle) >= 0) {
                     filtered.push(this.activeDump.threads[i]);
                 }
@@ -124,12 +119,13 @@ Vue.component('compare-thread-pane', {
 
         emptyThreads: function () {
             console.log('Building empty thread list.');
-            var emptyThreadNames = [];
+            const emptyThreadNames = [];
 
-            for (var threadName in this.threadMap) {
+            for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                var threads = this.threadMap[threadName], isEmpty = true;
-                for (var i = threads.length; i-- > 0;) {
+                const threads = this.threadMap[threadName];
+                let isEmpty = true;
+                for (let i = threads.length; i-- > 0;) {
                     if (threads[i] && threads[i].stack) {
                         isEmpty = false;
                         break;
@@ -144,19 +140,19 @@ Vue.component('compare-thread-pane', {
 
         stackIndex: function () {
             console.log('Building stack index.');
-            var words = [], map = {};
+            const words = [], map = {};
 
-            for (var threadName in this.threadMap) {
+            for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                var threads = this.threadMap[threadName];
-                for (var i = 0; i <= threads.length; ++i) {
-                    var thread = threads[i];
+                const threads = this.threadMap[threadName];
+                for (let i = 0; i <= threads.length; ++i) {
+                    const thread = threads[i];
                     if (!thread)
                         continue;
 
-                    var tokens = thread.stack.split(/\W+/);
-                    for (var k = tokens.length; k-- > 0;) {
-                        var tok = tokens[k].toLowerCase();
+                    const tokens = thread.stack.split(/\W+/);
+                    for (let k = tokens.length; k-- > 0;) {
+                        const tok = tokens[k].toLowerCase();
 
                         if (!tok || tok === 'at' || tok.match(/^\d+$/))
                             continue;
@@ -189,23 +185,23 @@ Vue.component('compare-thread-pane', {
 
             // TODO: Search among previous search results, when possible.
 
+            const stackMatchedThreads = {};
             if (this.stackFilter) {
-                var index = this.stackIndex, needle = this.stackFilter.toLowerCase();
-                var stackMatchedThreads = {};
-                for (var i = index.words.length; i-- > 0;) {
+                const index = this.stackIndex, needle = this.stackFilter.toLowerCase();
+                for (let i = index.words.length; i-- > 0;) {
                     if (index.words[i].indexOf(needle) >= 0) {
-                        var matched = index.map[index.words[i]];
-                        for (var key in matched)
+                        const matched = index.map[index.words[i]];
+                        for (const key in matched)
                             if (matched.hasOwnProperty(key))
                                 stackMatchedThreads[key] = 1;
                     }
                 }
             }
 
-            for (var threadName in this.threadMap) {
+            for (const threadName in this.threadMap) {
                 if (!this.threadMap.hasOwnProperty(threadName)) continue;
 
-                var show = true;
+                let show = true;
                 if (this.hideEmptyThreads && this.emptyThreads.indexOf(threadName) >= 0)
                     show = false;
 
@@ -226,7 +222,7 @@ Vue.component('compare-thread-pane', {
 
 });
 
-var app = new Vue({
+const app = new Vue({
     el: '#top',
 
     data: {
@@ -240,16 +236,16 @@ var app = new Vue({
 
         threadMap: function () {
             console.log('Constructing thread map.');
-            var table = {}, lastThreadObj = {};
+            const table = {}, lastThreadObj = {};
 
-            for (var i = 0; i < this.dumps.length; ++i) {
-                var dump = this.dumps[i];
-                for (var j = dump.threads.length; j-- > 0;) {
-                    var thread = dump.threads[j];
+            for (let i = 0; i < this.dumps.length; ++i) {
+                const dump = this.dumps[i];
+                for (let j = dump.threads.length; j-- > 0;) {
+                    const thread = dump.threads[j];
                     if (!table[thread.name])
                         table[thread.name] = new Array(this.dumps.length);
                     if (lastThreadObj[thread.name]) {
-                        var lastThread = lastThreadObj[thread.name];
+                        const lastThread = lastThreadObj[thread.name];
                         if (lastThread.stack === thread.stack && lastThread.status === thread.status) {
                             lastThread.span = (lastThread.span || 1) + 1;
                             table[thread.name][i] = '=DO=';
@@ -273,21 +269,21 @@ var app = new Vue({
 });
 
 function onDropped(e) {
-    var files = e.dataTransfer.files;
+    const files = e.dataTransfer.files;
     console.log(files);
-    var dumps = [];
-    var remainingFiles = files.length;
+    const dumps = [];
+    let remainingFiles = files.length;
     app.isLoading = true;
 
-    for (var i = 0, file; file = files[i]; i++) {
-        var reader = new FileReader();
+    for (let i = 0, file; file = files[i]; i++) {
+        const reader = new FileReader();
         reader.onload = getFileReadCallback(file);
         reader.readAsText(file);
     }
 
     function getFileReadCallback(file) {
         return function (event) {
-            var dump = parseDump(event.target.result);
+            const dump = parseDump(event.target.result);
             dump.id = app.dumps.length;
             dump.file = file;
             dump.event = event;
@@ -307,8 +303,8 @@ function onDropped(e) {
 }
 
 function parseDump(text) {
-    var blocks = text.trim().split('\n\n');
-    var dump = {
+    const blocks = text.trim().split('\n\n');
+    const dump = {
         title: blocks[0].split('\n')[1],
         threads: [],
         raw: text,
@@ -317,28 +313,28 @@ function parseDump(text) {
     };
 
     dump.time = new Date(blocks[0].split('\n')[0]);
-    var statusCountsMap = {}, methodCountsMap = {};
+    const statusCountsMap = {}, methodCountsMap = {};
 
-    for (var i = 1; i < blocks.length; ++i) {
+    for (let i = 1; i < blocks.length; ++i) {
         if (blocks[i].startsWith('JNI global references: ')) {
             dump.jniGlobalReferences = parseInt(blocks[i].split(': ')[1]);
             continue;
         }
 
-        var lines = blocks[i].split('\n');
+        const lines = blocks[i].split('\n');
 
         if (lines[0].trim() === 'Locked ownable synchronizers:') {
             // TODO: Locked ownable synchronizers data discarded.
             continue;
         }
 
-        var j = 0;
-        var match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+])?$/);
+        let j = 0;
+        let match = lines[j].match(/"(.+)" .+? ([^=\[]+)(\s*\[0x[a-f0-9]+])?$/);
         if (!match) {
             console.warn('Unable to parse: ', lines[j]);
             continue;
         }
-        var thread = {
+        const thread = {
             name: match[1],
             status: Status.get(match[2].trim())
         };
@@ -363,8 +359,8 @@ function parseDump(text) {
         methodCountsMap[thread.method] = (methodCountsMap[thread.method] || 0) + 1;
     }
 
-    var percentFactor = 100 / dump.threads.length;
-    for (var key in statusCountsMap) {
+    const percentFactor = 100 / dump.threads.length;
+    for (let key in statusCountsMap) {
         if (statusCountsMap.hasOwnProperty(key))
             dump.statusCounts.push({
                 status: key,
@@ -374,7 +370,7 @@ function parseDump(text) {
     }
     dump.statusCounts.sort(countSorter);
 
-    for (key in methodCountsMap) {
+    for (let key in methodCountsMap) {
         if (methodCountsMap.hasOwnProperty(key))
             dump.methodCounts.push({
                 method: key,
