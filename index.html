@@ -115,20 +115,16 @@
         <section v-else>
             <h1>Summary</h1>
 
-            <table v-if="dumps.length">
-                <tr>
-                    <th>Thread dumps</th>
-                    <td style="text-align: right;">{{ dumps.length }}</td>
-                </tr>
-                <tr>
-                    <th>Oldest dump time</th>
-                    <td>{{ dumps[0].time }}</td>
-                </tr>
-                <tr>
-                    <th>Latest dump time</th>
-                    <td>{{ dumps[dumps.length - 1].time }}</td>
-                </tr>
-            </table>
+            <p>Loaded {{ dumps.length }} thread dump{{ dumps.length > 1 ? 's' : '' }}.</p>
+
+            <dl v-if="dumps.length > 1">
+                <dt>Oldest dump time</dt>
+                <dd><f-time :time="dumps[0].time"></f-time>
+                    &mdash; {{ dumps[0].file.name }}</dd>
+                <dt>Newest dump time</dt>
+                <dd><f-time :time="dumps[dumps.length - 1].time"></f-time>
+                    &mdash; {{ dumps[dumps.length - 1].file.name }}</dd>
+            </dl>
 
             <!-- Not a very clever list, yet.
             <h2>Hang Suspects</h2>
