@@ -169,9 +169,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr v-for="(threads, threadName) in threadMapFiltered" v-show="threads._show">
-                    <td style="max-width: 220px">{{ threadName }}</td>
-                    <td v-for="thread in threads" @click="activeThread = thread || activeThread"
+                <tr v-for="entry in threadMapFiltered" v-show="entry[1].show">
+                    <td style="max-width: 220px">{{ entry[0] }}</td>
+                    <td v-for="thread in entry[1].threads" @click="activeThread = thread || activeThread"
                         :class="[thread ? thread.status.name : '', {active: activeThread === thread}]"
                         v-if="thread !== '=DO='" :colspan="thread && thread.span || 1">
                         <span v-if="thread">

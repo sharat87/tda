@@ -61,10 +61,8 @@ Vue.component('dump-list-pane', {
         hangSuspects: function () {
             const hangSuspects = [];
 
-            for (const threadName in this.threadMap) {
-                if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                const threads = this.threadMap[threadName];
-
+            for (const [threadName, item] of this.threadMap) {
+                const threads = item.threads;
                 if (!threads[threads.length - 1])
                     continue;
 
@@ -121,9 +119,8 @@ Vue.component('compare-thread-pane', {
             console.log('Building empty thread list.');
             const emptyThreadNames = new Set();
 
-            for (const threadName in this.threadMap) {
-                if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                const threads = this.threadMap[threadName];
+            for (const [threadName, item] of this.threadMap) {
+                const threads = item.threads;
                 let isEmpty = true;
                 for (let i = threads.length; i-- > 0;) {
                     if (threads[i] && threads[i].stack) {
@@ -142,9 +139,8 @@ Vue.component('compare-thread-pane', {
             console.log('Building stack index.');
             const words = new Set(), map = new Map();
 
-            for (const threadName in this.threadMap) {
-                if (!this.threadMap.hasOwnProperty(threadName)) continue;
-                const threads = this.threadMap[threadName];
+            for (const [threadName, item] of this.threadMap) {
+                const threads = item.threads;
                 for (let i = 0; i <= threads.length; ++i) {
                     const thread = threads[i];
                     if (!thread)
@@ -158,9 +154,9 @@ Vue.component('compare-thread-pane', {
                             continue;
 
                         if (map.has(tok)) {
-                            map.get(tok).add(thread.name);
+                            map.get(tok).add(threadName);
                         } else {
-                            map.set(tok, new Set([thread.name]));
+                            map.set(tok, new Set([threadName]));
                             words.add(tok);
                         }
                     }
@@ -200,9 +196,7 @@ Vue.component('compare-thread-pane', {
 
             // TODO: Search among previous search results, when possible.
 
-            for (const threadName in this.threadMap) {
-                if (!this.threadMap.hasOwnProperty(threadName)) continue;
-
+            for (const threadName of this.threadMap.keys()) {
                 let show = true;
                 if (this.hideEmptyThreads && this.emptyThreads.has(threadName))
                     show = false;
@@ -213,11 +207,11 @@ Vue.component('compare-thread-pane', {
                 else if (this.stackFilter && !this.stackMatchedThreads.has(threadName))
                     show = false;
 
-                this.threadMap[threadName]._show = show;
+                this.threadMap.get(threadName).show = show;
             }
 
             console.log('Done filtering.');
-            return this.threadMap;
+            return Array.from(this.threadMap);
         }
 
     }
@@ -238,23 +232,26 @@ const app = new Vue({
 
         threadMap: function () {
             console.log('Constructing thread map.');
-            const table = {}, lastThreadObj = {};
+            const table = new Map(), lastThreadObj = {};
 
             for (let i = 0; i < this.dumps.length; ++i) {
                 const dump = this.dumps[i];
                 for (let j = dump.threads.length; j-- > 0;) {
                     const thread = dump.threads[j];
-                    if (!table[thread.name])
-                        table[thread.name] = new Array(this.dumps.length);
+
+                    if (!table.has(thread.name))
+                        table.set(thread.name, {threads: new Array(this.dumps.length), show: true});
+
                     if (lastThreadObj[thread.name]) {
                         const lastThread = lastThreadObj[thread.name];
                         if (lastThread.stack === thread.stack && lastThread.status === thread.status) {
                             lastThread.span = (lastThread.span || 1) + 1;
-                            table[thread.name][i] = '=DO=';
+                            table.get(thread.name).threads[i] = '=DO=';
                             continue;
                         }
                     }
-                    table[thread.name][i] = thread;
+
+                    table.get(thread.name).threads[i] = thread;
                     if (thread)
                         lastThreadObj[thread.name] = thread;
                 }
