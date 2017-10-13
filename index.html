@@ -75,12 +75,20 @@
             -->
 
             <table class="stats-table">
+                <thead>
+                <tr>
+                    <th>Method Name</th>
+                    <th colspan="3">Thread Count</th>
+                </tr>
+                </thead>
+                <tbody>
                 <tr v-for="stat in activeDump.statusCounts">
                     <td>{{ stat.status }}</td>
                     <td class="val">{{ stat.count }}</td>
                     <td class="val">{{ stat.percentage }}%</td>
                     <td class="bar"><div :style="{width: stat.percentage + '%'}"></div></td>
                 </tr>
+                </tbody>
             </table>
 
             <h2>Lock Analysis</h2>
