@@ -97,22 +97,52 @@
                     <th>Held by</th>
                 </tr>
                 </thead>
+                <tbody>
                 <tr v-for="lock in activeDump.locks" v-if="!hideLocksWithNoWaits || lock.count > 0">
                     <td>{{ lock.id }}</td>
                     <td>{{ lock.type }}</td>
                     <td class="val">{{ lock.count }}</td>
                     <td>{{ lock.holder }}</td>
                 </tr>
+                </tbody>
             </table>
 
             <h2>Method Analysis</h2>
+            <div>
+                <span>Show only the top</span>
+                <label>
+                    <input type="radio" name="methodTopLimit" v-model="methodTopLimit" value="5">
+                    <span>5</span>
+                </label>
+                <label>
+                    <input type="radio" name="methodTopLimit" v-model="methodTopLimit" value="10">
+                    <span>10</span>
+                </label>
+                <label>
+                    <input type="radio" name="methodTopLimit" v-model="methodTopLimit" value="20">
+                    <span>20</span>
+                </label>
+                <label>
+                    <input type="radio" name="methodTopLimit" v-model="methodTopLimit"
+                           :value="activeDump.methodCounts.length" >
+                    <span>All</span>
+                </label>
+            </div>
             <table class="stats-table">
-                <tr v-for="stat in activeDump.methodCounts">
+                <thead>
+                <tr>
+                    <th>Method Name</th>
+                    <th colspan="3">Thread Count</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="stat in activeDump.methodCounts.slice(0, methodTopLimit)">
                     <td>{{ stat.method || 'NO JAVA STACK' }}</td>
                     <td class="val">{{ stat.count }}</td>
                     <td class="val">{{ stat.percentage }}%</td>
                     <td class="bar"><div :style="{width: stat.percentage + '%'}"></div></td>
                 </tr>
+                </tbody>
             </table>
 
             <h2>Threads</h2>

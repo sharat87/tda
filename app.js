@@ -64,6 +64,7 @@ Vue.component('dump-list-pane', {
         return {
             activeDump: null,
             hideLocksWithNoWaits: true,
+            methodTopLimit: 5,
             threadFilter: ''
         };
     },
