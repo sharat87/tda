@@ -187,6 +187,23 @@
                     &mdash; {{ dumps[dumps.length - 1].file.name }}</dd>
             </dl>
 
+            <h2>Lock Tracks</h2>
+            <p>Counts of threads waiting for each lock, in each dump file.</p>
+            <table class="stats-table">
+                <thead>
+                <tr>
+                    <th>Lock ID</th>
+                    <th v-for="dump in dumps">{{ dump.file.name }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="lock in lockTracks">
+                    <td><code>{{ lock.id }}</code></td>
+                    <td v-for="(dump, i) in dumps">{{ lock.counts.get(i) }}</td>
+                </tr>
+                </tbody>
+            </table>
+
             <!-- Not a very clever list, yet.
             <h2>Hang Suspects</h2>
             <p>There's {{ hangSuspects.length }} suspects.</p>

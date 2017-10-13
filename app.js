@@ -27,6 +27,8 @@ const Status = {
                 return Status.RUNNABLE;
             case Status.WAIT_CONDITION.raw:
                 return Status.WAIT_CONDITION;
+            case Status.WAIT_MONITOR.raw:
+                return Status.WAIT_MONITOR;
             case Status.OBJECT_WAIT.raw:
                 return Status.OBJECT_WAIT;
             case Status.SLEEPING.raw:
@@ -106,6 +108,31 @@ Vue.component('dump-list-pane', {
             }
 
             return filtered;
+        },
+
+        lockTracks: function () {
+            const lockTracksMap = new Map();
+
+            let i = 0;
+            for (const dump of this.dumps) {
+                for (const lock of dump.locks) {
+                    if (!lock.count)
+                        continue;
+                    if (!lockTracksMap.has(lock.id))
+                        lockTracksMap.set(lock.id, new Map());
+                    lockTracksMap.get(lock.id).set(i, lock.count);
+                }
+                ++i;
+            }
+
+            const lockTracks = [];
+            for (const [id, counts] of lockTracksMap)
+                lockTracks.push({id, counts});
+            lockTracks.sort(function (a, b) {
+                return a.id < b.iD ? -1 : 1;
+            });
+
+            return lockTracks;
         }
 
     }
