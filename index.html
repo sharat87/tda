@@ -83,6 +83,28 @@
                 </tr>
             </table>
 
+            <h2>Lock Analysis</h2>
+            <label>
+                <input type="checkbox" v-model="hideLocksWithNoWaits">
+                <span>Hide locks with no waiting threads</span>
+            </label>
+            <table class="stats-table">
+                <thead>
+                <tr>
+                    <th>Lock ID</th>
+                    <th>Object Type</th>
+                    <th>Waits</th>
+                    <th>Held by</th>
+                </tr>
+                </thead>
+                <tr v-for="lock in activeDump.locks" v-if="!hideLocksWithNoWaits || lock.count > 0">
+                    <td>{{ lock.id }}</td>
+                    <td>{{ lock.type }}</td>
+                    <td class="val">{{ lock.count }}</td>
+                    <td>{{ lock.holder }}</td>
+                </tr>
+            </table>
+
             <h2>Method Analysis</h2>
             <table class="stats-table">
                 <tr v-for="stat in activeDump.methodCounts">

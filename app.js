@@ -13,7 +13,7 @@ const Status = {
     DEADLOCK: {name: 'DEADLOCK', raw: '', icon: 'fa-question-circle'},
     RUNNABLE: {name: 'RUNNABLE', raw: 'runnable', icon: 'fa-play-circle-o'},
     WAIT_CONDITION: {name: 'WAIT_CONDITION', raw: 'waiting on condition', icon: 'fa-moon-o'},
-    WAIT_MONITOR: {name: 'WAIT_MONITOR', raw: '', icon: 'fa-clock-o'},
+    WAIT_MONITOR: {name: 'WAIT_MONITOR', raw: 'waiting for monitor entry', icon: 'fa-eye'},
     SUSPENDED: {name: 'SUSPENDED', raw: '', icon: 'fa-question-circle'},
     OBJECT_WAIT: {name: 'OBJECT_WAIT', raw: 'in Object.wait()', icon: 'fa-clock-o'},
     BLOCKED: {name: 'BLOCKED', raw: '', icon: 'fa-question-circle'},
@@ -63,6 +63,7 @@ Vue.component('dump-list-pane', {
     data: function () {
         return {
             activeDump: null,
+            hideLocksWithNoWaits: true,
             threadFilter: ''
         };
     },
@@ -322,11 +323,12 @@ function parseDump(text) {
         threads: [],
         raw: text,
         statusCounts: [],
-        methodCounts: []
+        methodCounts: [],
+        locks: []
     };
 
     dump.time = new Date(blocks[0].split('\n')[0]);
-    const statusCountsMap = {}, methodCountsMap = {};
+    const statusCountsMap = {}, allLocks = new Map(), methodCountsMap = {};
 
     for (let i = 1; i < blocks.length; ++i) {
         if (blocks[i].startsWith('JNI global references: ')) {
@@ -367,6 +369,30 @@ function parseDump(text) {
 
         thread.stack = lines.slice(j).join('\n');
 
+        for (; j < lines.length; ++j) {
+            const line = lines[j];
+            let match = line.match(/- waiting to lock <(.+?)> \(a (.+?)\)/);
+            if (match) {
+                const id = match[1], type = match[2];
+                if (allLocks.has(id)) {
+                    allLocks.get(id).count += 1;
+                } else {
+                    allLocks.set(id, {id, type, count: 1});
+                }
+                continue;
+            }
+
+            match = line.match(/- locked <(.+?)> \(a (.+)\)/);
+            if (match) {
+                const id = match[1], type = match[2];
+                if (allLocks.has(id)) {
+                    allLocks.get(id).holder = thread.name;
+                } else {
+                    allLocks.set(id, {id, type, count: 0, holder: thread.name});
+                }
+            }
+        }
+
         dump.threads.push(thread);
         statusCountsMap[thread.status.name] = (statusCountsMap[thread.status.name] || 0) + 1;
         methodCountsMap[thread.method] = (methodCountsMap[thread.method] || 0) + 1;
@@ -392,6 +418,10 @@ function parseDump(text) {
             });
     }
     dump.methodCounts.sort(countSorter);
+
+    for (const lock of allLocks.values())
+        dump.locks.push(lock);
+    dump.locks.sort(countSorter);
 
     return dump;
 

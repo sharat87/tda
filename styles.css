@@ -169,9 +169,20 @@ tr:hover {
     background-color: rgba(0, 0, 0, .05);
 }
 
+table.stats-table {
+    max-width: 100%;
+}
+
 table.stats-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
     border: 1px solid rgba(0, 0, 0, .1);
     padding: 3px 6px;
+    white-space: nowrap;
+}
+
+table.stats-table td:first-child {
+    max-width: 50%;
 }
 
 table.thread-compare {
