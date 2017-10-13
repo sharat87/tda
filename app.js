@@ -101,9 +101,9 @@ Vue.component('dump-list-pane', {
             if (!needle)
                 return this.activeDump.threads;
 
-            for (let i = 0; i < this.activeDump.threads.length; ++i) {
-                if (this.activeDump.threads[i].name.indexOf(needle) >= 0) {
-                    filtered.push(this.activeDump.threads[i]);
+            for (const [threadName, thread] of this.activeDump.threads) {
+                if (threadName.indexOf(needle) >= 0) {
+                    filtered.push(thread);
                 }
             }
 
@@ -279,24 +279,22 @@ const app = new Vue({
 
             for (let i = 0; i < this.dumps.length; ++i) {
                 const dump = this.dumps[i];
-                for (let j = dump.threads.length; j-- > 0;) {
-                    const thread = dump.threads[j];
+                for (const [threadName, thread] of dump.threads) {
+                    if (!table.has(threadName))
+                        table.set(threadName, {threads: new Array(this.dumps.length), show: true});
 
-                    if (!table.has(thread.name))
-                        table.set(thread.name, {threads: new Array(this.dumps.length), show: true});
-
-                    if (lastThreadObj[thread.name]) {
-                        const lastThread = lastThreadObj[thread.name];
+                    if (lastThreadObj[threadName]) {
+                        const lastThread = lastThreadObj[threadName];
                         if (lastThread.stack === thread.stack && lastThread.status === thread.status) {
                             lastThread.span = (lastThread.span || 1) + 1;
-                            table.get(thread.name).threads[i] = '=DO=';
+                            table.get(threadName).threads[i] = '=DO=';
                             continue;
                         }
                     }
 
-                    table.get(thread.name).threads[i] = thread;
+                    table.get(threadName).threads[i] = thread;
                     if (thread)
-                        lastThreadObj[thread.name] = thread;
+                        lastThreadObj[threadName] = thread;
                 }
             }
 
@@ -348,7 +346,7 @@ function parseDump(text) {
     const blocks = text.trim().split('\n\n');
     const dump = {
         title: blocks[0].split('\n')[1],
-        threads: [],
+        threads: new Map(),
         raw: text,
         statusCounts: [],
         methodCounts: [],
@@ -421,12 +419,12 @@ function parseDump(text) {
             }
         }
 
-        dump.threads.push(thread);
+        dump.threads.set(thread.name, thread);
         statusCountsMap[thread.status.name] = (statusCountsMap[thread.status.name] || 0) + 1;
         methodCountsMap[thread.method] = (methodCountsMap[thread.method] || 0) + 1;
     }
 
-    const percentFactor = 100 / dump.threads.length;
+    const percentFactor = 100 / dump.threads.size;
     for (let key in statusCountsMap) {
         if (statusCountsMap.hasOwnProperty(key))
             dump.statusCounts.push({
