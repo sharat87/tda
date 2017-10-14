@@ -16,10 +16,9 @@ const Status = {
     WAIT_MONITOR: {name: 'WAIT_MONITOR', raw: 'waiting for monitor entry', icon: 'fa-eye'},
     SUSPENDED: {name: 'SUSPENDED', raw: '', icon: 'fa-question-circle'},
     OBJECT_WAIT: {name: 'OBJECT_WAIT', raw: 'in Object.wait()', icon: 'fa-clock-o'},
-    BLOCKED: {name: 'BLOCKED', raw: '', icon: 'fa-question-circle'},
-    PARKED: {name: 'PARKED', raw: '', icon: 'fa-question-circle'},
+    BLOCKED: {name: 'BLOCKED', raw: 'sleeping', icon: 'fa-question-circle'},
+    PARKED: {name: 'PARKED', raw: '', icon: 'fa-ban'},
     UNKNOWN: {name: 'UNKNOWN', raw: '', icon: 'fa-times'},
-    SLEEPING: {name: 'SLEEPING', raw: 'sleeping', icon: 'fa-times'},
 
     get: function (text) {
         switch (text) {
@@ -31,8 +30,8 @@ const Status = {
                 return Status.WAIT_MONITOR;
             case Status.OBJECT_WAIT.raw:
                 return Status.OBJECT_WAIT;
-            case Status.SLEEPING.raw:
-                return Status.SLEEPING;
+            case Status.BLOCKED.raw:
+                return Status.BLOCKED;
         }
         console.warn('Unknown status text: ' + text);
         return Status.UNKNOWN;
@@ -98,11 +97,8 @@ Vue.component('dump-list-pane', {
             if (!this.activeDump) return [];
             const filtered = [], needle = this.threadFilter;
 
-            if (!needle)
-                return this.activeDump.threads;
-
             for (const [threadName, thread] of this.activeDump.threads) {
-                if (threadName.indexOf(needle) >= 0) {
+                if (!needle || threadName.indexOf(needle) >= 0) {
                     filtered.push(thread);
                 }
             }
